@@ -1,0 +1,6 @@
+.env
+server/.flaskenv
+server/env
+server/__pycache__
+env/
+.venv
