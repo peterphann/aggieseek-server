@@ -11,7 +11,7 @@ def index():
     return 'Hello World!'
 
 
-@app.route('/api/sections/<term>/<crn>/', methods=['GET'])
+@app.route('/sections/<term>/<crn>/', methods=['GET'])
 @cross_origin(origin='*')
 def sections(term, crn):
     course_info = scrape_section(term, crn)
