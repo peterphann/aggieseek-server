@@ -14,6 +14,7 @@ def index():
 @app.route('/api/sections/<term>/<crn>/', methods=['GET'])
 @cross_origin(origin='*')
 def sections(term, crn):
+    course_info = scrape_section(term, crn)
 
     if course_info:
         return course_info
