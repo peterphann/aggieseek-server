@@ -63,9 +63,12 @@ def scrape_instructor(course, term, crn) -> str:
 
 def scrape_section(term, crn) -> dict:
     url = f'https://compass-ssb.tamu.edu/pls/PROD/bwykschd.p_disp_detail_sched?term_in={term}&crn_in={crn}'
+    print('a')
 
     try:
+        print('b')
         page = requests.get(url)
+        print('c')
         page.raise_for_status()
     except requests.HTTPError as e:
         return {}
