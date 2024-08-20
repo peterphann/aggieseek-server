@@ -23,6 +23,8 @@ def sections(term, crns):
             course_info.append(future.result())
 
     if course_info:
+        if len(course_info) == 1:
+            return course_info[0]
         return course_info
     else:
         return Response(f'{{"error": "Course not found", "crn": "2", "status": 400}}', status=400,
