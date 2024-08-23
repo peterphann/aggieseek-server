@@ -11,23 +11,15 @@ def index():
     return 'Hello World!'
 
 
-@app.route('/sections/<term>/<crns>/', methods=['GET'])
+@app.route('/sections/<term>/<crn>/', methods=['GET'])
 @cross_origin(origin='*')
-def sections(term, crns):
-    crn_list = crns.split(',')
+def sections(term, crn):
+    section = scrape_section(term, crn)
 
-    course_info = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        for crn in crn_list:
-            future = executor.submit(scrape_section, term, crn)
-            course_info.append(future.result())
-
-    if course_info:
-        if len(course_info) == 1:
-            return course_info[0]
-        return course_info
+    if section['status'] == 200:
+        return section
     else:
-        return Response(f'{{"error": "Course not found", "crn": "2", "status": 400}}', status=400,
+        return Response(f'{{"error": "Course not found", "crn": {crn}, "status": 400}}', status=400,
                         mimetype='application/json')
 
 
