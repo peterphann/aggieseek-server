@@ -1,20 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
 
-error_json = lambda crn: {
-    'seats': {
-        'actual': 'ERROR',
-        'capacity': 'ERROR',
-        'remaining': 'ERROR'
-    },
-    'crn': crn,
-    'title': 'ERROR',
-    'course': 'ERROR',
-    'section': 'ERROR',
-    'term': 'ERROR',
-    'professor': 'ERROR'
-}
-
 
 def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
     all_fields = soup.find_all('td', class_='dddefault')
