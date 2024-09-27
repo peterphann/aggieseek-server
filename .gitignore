@@ -4,3 +4,6 @@ server/env
 server/__pycache__
 env/
 .venv
+.xml
+.iml
+.idea

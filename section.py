@@ -1,26 +1,12 @@
 from bs4 import BeautifulSoup
 import requests
 
-error_json = lambda crn: {
-    'seats': {
-        'actual': 'ERROR',
-        'capacity': 'ERROR',
-        'remaining': 'ERROR'
-    },
-    'crn': crn,
-    'title': 'ERROR',
-    'course': 'ERROR',
-    'section': 'ERROR',
-    'term': 'ERROR',
-    'professor': 'ERROR'
-}
-
 
 def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
     all_fields = soup.find_all('td', class_='dddefault')
 
     if len(all_fields) == 0:
-        return {}
+        return {'crn': int(crn), 'status': 400}
 
     static_headers = soup.find('div', class_='staticheaders').text
     term_and_campus = static_headers.split('\n')[1]
@@ -65,14 +51,16 @@ def scrape_section(term, crn) -> dict:
     url = f'https://compass-ssb.tamu.edu/pls/PROD/bwykschd.p_disp_detail_sched?term_in={term}&crn_in={crn}'
 
     try:
+        print(url)
         page = requests.get(url)
         page.raise_for_status()
     except requests.HTTPError as e:
-        return {}
+        return {'crn': crn}
 
     if page.status_code != 200:
-        return {}
+        return {'crn': crn}
 
     soup = BeautifulSoup(page.text, 'html.parser')
     course_info = parse_soup(soup, term, crn)
+
     return course_info

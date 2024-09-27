@@ -1,17 +1,23 @@
 from flask import Flask, Response
 from flask_cors import CORS, cross_origin
 from section import scrape_section
-
+import concurrent.futures
 app = Flask(__name__, static_folder='')
+
+
+@app.route('/')
+@cross_origin(origin='*')
+def index():
+    return 'Hello World!'
 
 
 @app.route('/sections/<term>/<crn>/', methods=['GET'])
 @cross_origin(origin='*')
 def sections(term, crn):
-    course_info = scrape_section(term, crn)
+    section = scrape_section(term, crn)
 
-    if course_info:
-        return course_info
+    if section['status'] == 200:
+        return section
     else:
         return Response(f'{{"error": "Course not found", "crn": {crn}, "status": 400}}', status=400,
                         mimetype='application/json')
