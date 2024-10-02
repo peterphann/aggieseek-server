@@ -1,9 +1,10 @@
 .env
-server/.flaskenv
-server/env
-server/__pycache__
+__pycache__
+.DS_Store
 env/
 .venv
 .xml
 .iml
 .idea
+.pyc
+.flaskenv
