@@ -1,18 +1,17 @@
 from flask import Flask, Response
 from flask_cors import CORS, cross_origin
 from section import scrape_section
-import concurrent.futures
 app = Flask(__name__, static_folder='')
 
 
 @app.route('/')
-@cross_origin(origin='*')
+@cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def index():
     return 'Hello World!'
 
 
 @app.route('/sections/<term>/<crn>/', methods=['GET'])
-@cross_origin(origin='*')
+@cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def sections(term, crn):
     section = scrape_section(term, crn)
 
