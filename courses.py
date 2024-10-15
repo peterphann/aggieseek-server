@@ -80,7 +80,20 @@ def log_response_and_raise(response, error_message):
     raise Exception(f"{error_message} - Response saved to fail_response.log")
 
 
+def save(json_content, filename):
+    with open(f"{filename}.json", "w") as f:
+        f.write(json.dumps(json_content, indent=4))
+
+
+def load(filename):
+    with open(f"{filename}.json", "r") as f:
+        return json.loads(f.read())
+
+
 def parse_response(response_json):
+    # parse response is meant to convert the nasty keys from
+    # the response into something palatable to our requirements
+
     # create a lookup table to convert the original response keys to
     # something more palatable for our use
 
@@ -159,10 +172,12 @@ def parse_response(response_json):
 def scrape_all_courses(
     year,
     semester: Literal["spring", "summer", "fall"],
-    location: Literal["cs", "ga", "un"] = "cs",
+    location: Literal["cs", "gv", "un"] = "cs",
     save_raw=False,
 ):
     # NOTE: location codes: College Station, Galveston, Unknown
+    # the order of the location codes determines the number given to
+    # the post request so don't change them
 
     # first we need to get cookies required for post request by sending dummy request
 
@@ -191,7 +206,7 @@ def scrape_all_courses(
 
     # create termCode value
     semesterIndex = ("spring", "summer", "fall").index(semester) + 1
-    locationIndex = ("cs", "ga", "un").index(location) + 1
+    locationIndex = ("cs", "gv", "un").index(location) + 1
     termCode = f"{year}{semesterIndex}{locationIndex}"
 
     # NOTE: termCode breakdown:
@@ -229,27 +244,39 @@ def scrape_all_courses(
     # if save_raw, then save the original json response with original
     # formatting
     if save_raw:
-        with open("output.json", "w") as f:
-            f.write(json.dumps(response.json(), indent=4))
+        save(response.json(), "output")
         return
 
     # otherwise, save json response with palatable keys relevant to our
     # goal
-    output = parse_response(response.json())
+    parsed = parse_response(response.json())
 
-    with open("output.json", "w") as f:
-        f.write(json.dumps(output, indent=4))
+    # TODO: DO NOT USE THE COMMENTED CODE BELOW. IT TECHNICALLY WORKS BUT IS OBVIOUSLY SLOW.
+    # your todo, if you choose to accept it, is to find another endpoint to
+    # pull seat availability at once, preferrably with all of the information from
+    # this one as well, so that we don't have to run two calls.
 
-    # TODO: pull seat availability per crn
+    # for i in range(len(parsed)):
+    #     parsed[i]["seats"] = scrape_section(termCode, parsed[i]["crn"])["seats"]
+
+    save(parsed, "output")
 
 
-def analyze_unique():
+def filter_courses(subject=None, course=None):  # developement code to filter courses
     with open("output.json", "r") as f:
         c = json.loads(f.read())
 
-    a = [i["SWV_CLASS_SEARCH_ENRL"] for i in c]
-    print(set(a))
+    results = [i for i in c if i["subject"] == subject and i["course"] == course]
+    return results
+
+
+def display_course(course):  # development code to see what the response got
+    print(f"{course['subject']}{course['course']} : crn = {course['crn']}, {
+          len(course['instructors'])} professors (Ex: {course['instructors'][0]['NAME']})")
 
 
 if __name__ == "__main__":
-    scrape_all_courses(2024, "fall", "cs", save_raw=False)
+    pass
+
+    # scrape_all_courses(2024, "fall", "cs", save_raw=False)
+    # save(filter_courses("ENGR", "102"), "filtered")
