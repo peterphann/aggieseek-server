@@ -18,3 +18,4 @@ soupsieve==2.5
 urllib3==2.2.2
 watchdog==5.0.3
 Werkzeug==3.0.3
+aiohttp==3.10.10
