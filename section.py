@@ -23,6 +23,8 @@ def recursive_parse_json(json_str):
         # If parsing fails, return the original string
         return json_str
     
+
+
 def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
     all_fields = soup.find_all('td', class_='dddefault')
 
@@ -64,10 +66,10 @@ def scrape_section(term, crn) -> dict:
         page = requests.get(url)
         page.raise_for_status()
     except requests.HTTPError as e:
-        return {'crn': crn}
+        return {'CRN': crn}
 
     if page.status_code != 200:
-        return {'crn': crn}
+        return {'CRN': crn}
 
     soup = BeautifulSoup(page.text, 'html.parser')
     course_info = parse_soup(soup, term, crn)
@@ -98,16 +100,16 @@ def get_all_classes(term_code: str) -> List[dict]:
     link = f"https://howdy.tamu.edu/api/course-sections"
     res = requests.post(link, json={"startRow":0,"endRow":0,"termCode":term_code,"publicSearch":"Y"})
     if res.status_code != 200:
-        return [{'error': 'Failed to fetch class data from Howdy'}]
+        return [{'ERROR': 'Failed to fetch class data from Howdy'}]
     
     res = res.json()
 
     if res == []:
-        return [{'error': 'No classes found for the given term'}]
+        return [{'ERROR': 'No classes found for the given term'}]
     try:
         return res
     except:
-        return [{'error': 'Failed to parse class data from Howdy'}]
+        return [{'ERROR': 'Failed to parse class data from Howdy'}]
 
 def get_section_detail(term_code: str, crn: str) -> dict:
     error = []
@@ -136,6 +138,7 @@ def get_section_detail(term_code: str, crn: str) -> dict:
 
     async def fetch_all():
         out = {}
+        out['OTHER_ATTRIBUTES'] = {}
         async with aiohttp.ClientSession() as session:
             # Fetch general info
             try:
@@ -168,10 +171,10 @@ def get_section_detail(term_code: str, crn: str) -> dict:
                         else:
                             text = await res.text()
                             data = recursive_parse_json(text)
-                        out[key] = data
+                        out["OTHER_ATTRIBUTES"][key] = data
                 except Exception as exc:
                     error.append(f"{key} generated an exception: {exc}")
-                    out[key] = {}
+                    out["OTHER_ATTRIBUTES"][key] = {}
 
             tasks = [fetch_data(key, link) for key, link in links.items()]
             await asyncio.gather(*tasks)
@@ -179,7 +182,7 @@ def get_section_detail(term_code: str, crn: str) -> dict:
 
     # Run the async fetch_all function in the event loop
     out = asyncio.run(fetch_all())
-    out['Syllabus'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
-    out['Errors'] = error
-    out['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={out['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]['MORE']}'
+    out['SYLLABUS'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
+    out['ERRORS'] = error
+    out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]['MORE']}'
     return out

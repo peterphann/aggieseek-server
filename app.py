@@ -24,7 +24,7 @@ def sections(term, crn):
         section['time'] = time.time() - start_time
         return section
     else:
-        return Response(f'{{"error": "Course not found", "crn": {crn}, "status": 400}}', status=400,
+        return Response(f'{{"ERROR": "Course not found", "CRN": {crn}, "STATUS": 400}}', status=400,
                         mimetype='application/json')
 
 @app.route('/terms/', methods=['GET'])
