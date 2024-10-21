@@ -29,7 +29,7 @@ def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
     all_fields = soup.find_all('td', class_='dddefault')
 
     if len(all_fields) == 0:
-        return {'crn': int(crn), 'status': 400}
+        return {'CRN': crn, 'STATUS': 400}
     
     out = {
         'SEATS': {
@@ -37,7 +37,7 @@ def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
         'CAPACITY': int(all_fields[1].text),
         'REMAINING': int(all_fields[3].text)
         },
-        'status': 200,
+        'STATUS': 200,
     }
     out.update(get_section_detail(term, crn))
 
@@ -141,16 +141,15 @@ def get_section_detail(term_code: str, crn: str) -> dict:
 
     async def fetch_all():
         out = {}
-        out['OTHER_ATTRIBUTES'] = {}
         async with aiohttp.ClientSession() as session:
             # Fetch general info
             try:
                 async with session.get(general_info_link) as response:
-                    if response.status != 200:
+                    # Howdy still returns 200 for some reason if the response is invalid kms
+                    general_info = await response.json()
+                    if not general_info:
                         error.append(f"Failed to fetch general info from {general_info_link}")
                         general_info = {}
-                    else:
-                        general_info = await response.json()
                     out.update(general_info)
             except Exception as e:
                 error.append(f"Exception when fetching general info: {e}")
@@ -179,17 +178,21 @@ def get_section_detail(term_code: str, crn: str) -> dict:
                     error.append(f"{key} generated an exception: {exc}")
                     out["OTHER_ATTRIBUTES"][key] = {}
 
-            tasks = [fetch_data(key, link) for key, link in links.items()]
-            await asyncio.gather(*tasks)
+            is_valid_section = len(out) > 0
+
+            if is_valid_section:
+                out['OTHER_ATTRIBUTES'] = {}
+                tasks = [fetch_data(key, link) for key, link in links.items()]
+                await asyncio.gather(*tasks)
+                out['SYLLABUS'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
+                cv_information = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
+                cv_information['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={cv_information['MORE']}'
+                
+                
         return out
 
     # Run the async fetch_all function in the event loop
     out = asyncio.run(fetch_all())
-
-    out['SYLLABUS'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
     out['ERRORS'] = error
-    
-    cv_information = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
-    cv_information['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={cv_information['MORE']}'
-
+        
     return out
