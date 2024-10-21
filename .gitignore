@@ -8,3 +8,4 @@ env/
 .idea
 .pyc
 .flaskenv
+.vercel
