@@ -83,11 +83,15 @@ def get_all_terms() -> List[dict]:
     link = 'https://howdy.tamu.edu/api/all-terms'
     res = requests.get(link)
     if res.status_code != 200:
-        return [{'error': 'Failed to fetch term data from Howdy'}]
+        return [{'ERROR': 'Failed to fetch term data from Howdy'}]
+    
     try:
-        return res.json()
+        res_json = res.json()
+        res = {term['STVTERM_CODE']: term for term in res_json}
+        return res
+        
     except:
-        return [{'error': 'Failed to parse term data from Howdy'}]
+        return [{'ERROR': 'Failed to parse term data from Howdy'}]
     
 
 def get_all_classes(term_code: str) -> List[dict]:
