@@ -31,9 +31,11 @@ def sections(term, crn):
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def terms():
     start = time.time()
-    terms = [{'Query Time': time.time() - start}]
-    terms += get_all_terms()
-    return terms
+    response = {
+        'query_time': time.time() - start,
+        'terms': get_all_terms()
+    }
+    return response
 
 @app.route('/classes/<term>/', methods=['GET'])
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
