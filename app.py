@@ -10,7 +10,7 @@ app = Flask(__name__, static_folder='')
 @app.route('/')
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def index():
-    return 'Hello World!'
+    return ""
 
 
 @app.route('/classes/<term>/<crn>/', methods=['GET'])
