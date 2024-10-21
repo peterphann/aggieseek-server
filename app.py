@@ -13,13 +13,13 @@ def index():
     return 'Hello World!'
 
 
-@app.route('/sections/<term>/<crn>/', methods=['GET'])
+@app.route('/classes/<term>/<crn>/', methods=['GET'])
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def sections(term, crn):
     start_time = time.time()  
 
     section = scrape_section(term, crn)
-    section['time'] = time.time() - start_time
+    section['QUERY_TIME'] = time.time() - start_time
     return section
 
 @app.route('/terms/', methods=['GET'])
