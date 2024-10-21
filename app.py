@@ -1,25 +1,45 @@
 from flask import Flask, Response
 from flask_cors import CORS, cross_origin
-from section import scrape_section
+from section import scrape_section, get_all_terms, get_all_classes
+import time
+
+
 app = Flask(__name__, static_folder='')
 
 
 @app.route('/')
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def index():
-    return 'Hello World!'
+    return ""
 
 
-@app.route('/sections/<term>/<crn>/', methods=['GET'])
+@app.route('/classes/<term>/<crn>/', methods=['GET'])
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def sections(term, crn):
-    section = scrape_section(term, crn)
+    start_time = time.time()  
 
-    if section['status'] == 200:
-        return section
-    else:
-        return Response(f'{{"error": "Course not found", "crn": {crn}, "status": 400}}', status=400,
-                        mimetype='application/json')
+    section = scrape_section(term, crn)
+    section['QUERY_TIME'] = time.time() - start_time
+    return section
+
+@app.route('/terms/', methods=['GET'])
+@cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
+def terms():
+    start = time.time()
+    response = {
+        'QUERY_TIME': time.time() - start,
+        'TERMS': get_all_terms()
+    }
+    return response
+
+@app.route('/classes/<term>/', methods=['GET'])
+@cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
+def classes(term):
+    response = {}
+    start = time.time()
+    response['CLASSES'] = get_all_classes(term)
+    response['QUERY_TIME'] = time.time() - start
+    return response
 
 
 if __name__ == "__main__":
