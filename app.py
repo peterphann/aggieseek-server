@@ -19,13 +19,8 @@ def sections(term, crn):
     start_time = time.time()  
 
     section = scrape_section(term, crn)
-
-    if section['status'] == 200:
-        section['time'] = time.time() - start_time
-        return section
-    else:
-        return Response(f'{{"ERROR": "Course not found", "CRN": {crn}, "STATUS": 400}}', status=400,
-                        mimetype='application/json')
+    section['time'] = time.time() - start_time
+    return section
 
 @app.route('/terms/', methods=['GET'])
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
