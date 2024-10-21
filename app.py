@@ -27,18 +27,19 @@ def sections(term, crn):
 def terms():
     start = time.time()
     response = {
-        'query_time': time.time() - start,
-        'terms': get_all_terms()
+        'QUERY_TIME': time.time() - start,
+        'TERMS': get_all_terms()
     }
     return response
 
 @app.route('/classes/<term>/', methods=['GET'])
 @cross_origin(origin=['http://aggieseek.net, http://localhost:8080'])
 def classes(term):
+    response = {}
     start = time.time()
-    classes = [{'Query Time': time.time() - start}]
-    classes += get_all_classes(term)
-    return classes
+    response['CLASSES'] = get_all_classes(term)
+    response['QUERY_TIME'] = time.time() - start
+    return response
 
 
 if __name__ == "__main__":
