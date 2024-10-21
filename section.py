@@ -31,7 +31,7 @@ def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
     if len(all_fields) == 0:
         return {'CRN': crn, 'STATUS': 400}
     
-    out = {
+    response = {
         'SEATS': {
         'ACTUAL': int(all_fields[2].text),
         'CAPACITY': int(all_fields[1].text),
@@ -39,9 +39,9 @@ def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
         },
         'STATUS': 200,
     }
-    out.update(get_section_detail(term, crn))
+    response.update(get_section_detail(term, crn))
 
-    return out
+    return response
 
 
 def scrape_instructor(course, term, crn) -> str:
