@@ -32,10 +32,10 @@ def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
         return {'crn': int(crn), 'status': 400}
     
     out = {
-        'seats': {
-        'actual': int(all_fields[2].text),
-        'capacity': int(all_fields[1].text),
-        'remaining': int(all_fields[3].text)
+        'SEATS': {
+        'ACTUAL': int(all_fields[2].text),
+        'CAPACITY': int(all_fields[1].text),
+        'REMAINING': int(all_fields[3].text)
         },
         'status': 200,
     }
@@ -72,9 +72,12 @@ def scrape_section(term, crn) -> dict:
         return {'CRN': crn}
 
     soup = BeautifulSoup(page.text, 'html.parser')
-    course_info = parse_soup(soup, term, crn)
+    seat_info = parse_soup(soup, term, crn)
+    section_info = get_section_detail(term, crn)
 
-    return course_info
+    section_info.update(seat_info)
+
+    return section_info
 
 def get_all_terms() -> List[dict]:
     link = 'https://howdy.tamu.edu/api/all-terms'
@@ -182,7 +185,11 @@ def get_section_detail(term_code: str, crn: str) -> dict:
 
     # Run the async fetch_all function in the event loop
     out = asyncio.run(fetch_all())
+
     out['SYLLABUS'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
     out['ERRORS'] = error
-    out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]['MORE']}'
+    
+    cv_information = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
+    cv_information['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={cv_information['MORE']}'
+
     return out
