@@ -196,10 +196,12 @@ def get_section_details(term_code: str, crn: str) -> dict:
                 tasks = [fetch_data(key, link) for key, link in links.items()]
                 await asyncio.gather(*tasks)
                 out['SYLLABUS'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
-                instructor_info = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
-                out['INSTRUCTOR'] = instructor_info['NAME']
-                instructor_info['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={instructor_info['MORE']}'
-                
+                if out["OTHER_ATTRIBUTES"]['Meeting times with profs']:
+                    instructor_info = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
+                    out['INSTRUCTOR'] = instructor_info['NAME']
+                    instructor_info['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={instructor_info['MORE']}'
+                else:
+                    out['INSTRUCTOR'] = 'Not assigned'
                 
         return out
 
