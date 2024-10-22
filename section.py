@@ -22,8 +22,6 @@ def recursive_parse_json(json_str):
     except (json.JSONDecodeError, TypeError):
         # If parsing fails, return the original string
         return json_str
-    
-
 
 def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
     all_fields = soup.find_all('td', class_='dddefault')
@@ -39,7 +37,6 @@ def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
         },
         'STATUS': 200,
     }
-    response.update(get_section_detail(term, crn))
 
     return response
 
@@ -57,8 +54,7 @@ def scrape_instructor(course, term, crn) -> str:
     instructor_name = instructor_name.removesuffix(' (P)')
     return instructor_name
 
-
-def scrape_section(term, crn) -> dict:
+def get_section_seats(term, crn) -> dict:
     url = f'https://compass-ssb.tamu.edu/pls/PROD/bwykschd.p_disp_detail_sched?term_in={term}&crn_in={crn}'
 
     try:
@@ -72,8 +68,11 @@ def scrape_section(term, crn) -> dict:
         return {'CRN': crn}
 
     soup = BeautifulSoup(page.text, 'html.parser')
-    seat_info = parse_soup(soup, term, crn)
-    section_info = get_section_detail(term, crn)
+    return parse_soup(soup, term, crn)
+
+def get_section(term, crn) -> dict:
+    seat_info = get_section_seats(term, crn)
+    section_info = get_section_details(term, crn)
 
     section_info.update(seat_info)
 
@@ -83,16 +82,22 @@ def get_all_terms() -> List[dict]:
     link = 'https://howdy.tamu.edu/api/all-terms'
     res = requests.get(link)
     if res.status_code != 200:
-        return [{'ERROR': 'Failed to fetch term data from Howdy'}]
+        return []
     
     try:
         res_json = res.json()
         res = {term['STVTERM_CODE']: term for term in res_json}
         return res
-        
     except:
-        return [{'ERROR': 'Failed to parse term data from Howdy'}]
+        return []
+
+def get_term(term):
+    terms = get_all_terms()
+    if not terms:
+        return []
     
+    return terms.get(term, [])
+
 
 def get_all_classes(term_code: str) -> List[dict]:
     """
@@ -118,7 +123,7 @@ def get_all_classes(term_code: str) -> List[dict]:
     except:
         return [{'ERROR': 'Failed to parse class data from Howdy'}]
 
-def get_section_detail(term_code: str, crn: str) -> dict:
+def get_section_details(term_code: str, crn: str) -> dict:
     error = []
 
     links = {
@@ -154,6 +159,8 @@ def get_section_detail(term_code: str, crn: str) -> dict:
                     if not general_info:
                         error.append(f"Failed to fetch general info from {general_info_link}")
                         general_info = {}
+                    else:
+                        general_info['COURSE_NAME'] = f'{general_info['DEPT']} {general_info['COURSE_NUMBER']}'
                     out.update(general_info)
             except Exception as e:
                 error.append(f"Exception when fetching general info: {e}")
@@ -189,8 +196,9 @@ def get_section_detail(term_code: str, crn: str) -> dict:
                 tasks = [fetch_data(key, link) for key, link in links.items()]
                 await asyncio.gather(*tasks)
                 out['SYLLABUS'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
-                cv_information = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
-                cv_information['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={cv_information['MORE']}'
+                instructor_info = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
+                out['INSTRUCTOR'] = instructor_info['NAME']
+                instructor_info['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={instructor_info['MORE']}'
                 
                 
         return out
@@ -200,3 +208,36 @@ def get_section_detail(term_code: str, crn: str) -> dict:
     out['ERRORS'] = error
         
     return out
+
+def get_departments(term):
+    all_classes = get_all_classes(term)
+    departments = {}
+
+    for clss in all_classes:
+        subject = clss['SWV_CLASS_SEARCH_SUBJECT']
+        if subject not in departments:
+            departments[subject] = {
+                'SUBJECT': subject,
+                'DESCRIPTION': clss['SWV_CLASS_SEARCH_SUBJECT_DESC'],
+            }    
+    
+    return list(departments.values())
+
+def get_department(term_code, department):
+    all_classes = get_all_classes(term_code)
+    courses = {}
+
+    for clss in all_classes:
+        subject = clss['SWV_CLASS_SEARCH_SUBJECT']
+        if subject != department:
+            continue
+
+        course = clss['SWV_CLASS_SEARCH_COURSE']
+        course_title = clss['SWV_CLASS_SEARCH_TITLE']
+        if course not in courses:
+            courses[course] = {
+                "COURSE": course,
+                "TITLE": course_title.strip('HNR-')
+            }
+    
+    return list(courses.values())
