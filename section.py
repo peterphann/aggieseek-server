@@ -211,7 +211,7 @@ def get_section_details(term_code: str, crn: str) -> dict:
         
     return out
 
-def get_departments(term):
+def get_subjects(term):
     all_classes = get_all_classes(term)
     departments = {}
 
@@ -225,7 +225,7 @@ def get_departments(term):
     
     return list(departments.values())
 
-def get_department(term_code, department):
+def get_subject(term_code, department):
     all_classes = get_all_classes(term_code)
     courses = {}
 
@@ -236,10 +236,31 @@ def get_department(term_code, department):
 
         course = clss['SWV_CLASS_SEARCH_COURSE']
         course_title = clss['SWV_CLASS_SEARCH_TITLE']
+        if course_title[:4] == 'HNR-':
+            course_title = course_title[4:] 
+
         if course not in courses:
             courses[course] = {
                 "COURSE": course,
-                "TITLE": course_title.strip('HNR-')
+                "TITLE": course_title,
+                "DISPLAY": f'{course} {course_title}'
             }
     
     return list(courses.values())
+
+def get_course_sections(term_code, subject, course):
+    sections = []
+    classes = get_all_classes(term_code)
+
+    for clss in classes:
+        if clss['SWV_CLASS_SEARCH_SUBJECT'] == subject and clss['SWV_CLASS_SEARCH_COURSE'] == course:
+            sections.append(clss)
+
+    for sec in sections:
+        prof_string = sec['SWV_CLASS_SEARCH_INSTRCTR_JSON']
+        sec['SWV_CLASS_SEARCH_INSTRCTR'] = recursive_parse_json(prof_string)
+
+        clob_string = sec['SWV_CLASS_SEARCH_JSON_CLOB']
+        sec['SWV_CLASS_SEARCH_CLOB'] = recursive_parse_json(clob_string)
+
+    return sections
