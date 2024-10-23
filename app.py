@@ -1,11 +1,16 @@
 from flask import Flask, Response
 from flask_cors import CORS
+from flask_caching import Cache
 from section import *
 import time
 
-
 app = Flask(__name__, static_folder='')
+app.config.from_mapping({
+    "CACHE_TYPE": "SimpleCache",
+    "CACHE_DEFAULT_TIMEOUT": 300
+})
 CORS(app, origins=["http://localhost:5173", "https://aggieseek.net/"])
+cache = Cache(app)
 
 @app.route('/')
 def index():
@@ -57,6 +62,7 @@ def term(term):
     return response
 
 @app.route('/classes/<term>/', methods=['GET'])
+@cache.memoize(timeout=60)
 def classes(term):
     response = {}
     start = time.time()
