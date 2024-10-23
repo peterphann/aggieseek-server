@@ -9,3 +9,4 @@ env/
 .pyc
 .flaskenv
 .vercel
+venv
