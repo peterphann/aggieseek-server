@@ -1,6 +1,6 @@
 from flask import Flask, Response
 from flask_cors import CORS
-from section import get_section, get_all_terms, get_all_classes, get_term, get_section_seats, get_departments, get_department
+from section import *
 import time
 
 
@@ -64,20 +64,29 @@ def classes(term):
     response['QUERY_TIME'] = time.time() - start
     return response
 
-@app.route('/departments/<term>/', methods=['GET'])
-def departments(term):
+@app.route('/subjects/<term>/', methods=['GET'])
+def subjects(term):
     response = {}
     start = time.time()
-    response['DEPARTMENTS'] = get_departments(term)
+    response['DEPARTMENTS'] = get_subjects(term)
     response['QUERY_TIME'] = time.time() - start
     
     return response
 
-@app.route('/departments/<term>/<department>', methods=['GET'])
-def department(term, department):
+@app.route('/subjects/<term>/<subject>', methods=['GET'])
+def subject(term, subject):
     response = {}
     start = time.time()
-    response['COURSES'] = get_department(term, department)
+    response['COURSES'] = get_subject(term, subject)
+    response['QUERY_TIME'] = time.time() - start
+    
+    return response
+
+@app.route('/subjects/<term>/<subject>/<course>', methods=['GET'])
+def course(term, subject, course):
+    response = {}
+    start = time.time()
+    response['SECTIONS'] = get_course_sections(term, subject, course)
     response['QUERY_TIME'] = time.time() - start
     
     return response
