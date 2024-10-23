@@ -9,7 +9,7 @@ CORS(app, origins=["http://localhost:5173", "https://aggieseek.net/"])
 
 @app.route('/')
 def index():
-    return ""
+    return "<h1>AggieSeek</h1>"
 
 @app.route('/classes/<term>/<crn>/seats/', methods=['GET'])
 def seats(term, crn):
@@ -93,4 +93,4 @@ def course(term, subject, course):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8080)
+    app.run(debug=True, port=8000)
