@@ -3,6 +3,7 @@ import requests
 import json
 from typing import List
 import aiohttp
+import cache
 import asyncio
 
 # GPT written helper
@@ -110,18 +111,23 @@ def get_all_classes(term_code: str) -> List[dict]:
     """
 
     link = f"https://howdy.tamu.edu/api/course-sections"
-    res = requests.post(link, json={"startRow":0,"endRow":0,"termCode":term_code,"publicSearch":"Y"})
-    if res.status_code != 200:
-        return [{'ERROR': 'Failed to fetch class data from Howdy'}]
-    
-    res = res.json()
+    res = cache.get_cache()
+    if not res:
+        request = requests.post(link, json={"startRow":0,"endRow":0,"termCode":term_code,"publicSearch":"Y"})
+        if request.status_code != 200:
+            return [{'ERROR': 'Failed to fetch class data from Howdy'}]
+        
+        res = request.json()
+        cache.set_cache(res)
 
-    if res == []:
-        return [{'ERROR': 'No classes found for the given term'}]
-    try:
+        if res == []:
+            return [{'ERROR': 'No classes found for the given term'}]
+        try:
+            return res
+        except:
+            return [{'ERROR': 'Failed to parse class data from Howdy'}]
+    else:
         return res
-    except:
-        return [{'ERROR': 'Failed to parse class data from Howdy'}]
 
 def get_section_details(term_code: str, crn: str) -> dict:
     error = []
