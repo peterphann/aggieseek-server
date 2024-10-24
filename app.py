@@ -1,6 +1,6 @@
 from flask import Flask, Response
 from flask_cors import CORS
-from flask_caching import Cache
+from cache import cache
 from section import *
 import time
 
@@ -10,7 +10,7 @@ app.config.from_mapping({
     "CACHE_DEFAULT_TIMEOUT": 300
 })
 CORS(app, origins=["http://localhost:5173", "https://aggieseek.net/"])
-cache = Cache(app)
+cache.init_app(app)
 
 @app.route('/')
 def index():
@@ -62,12 +62,13 @@ def term(term):
     return response
 
 @app.route('/classes/<term>/', methods=['GET'])
-@cache.memoize(timeout=60)
 def classes(term):
+    print('memoizing')
     response = {}
     start = time.time()
     response['CLASSES'] = get_all_classes(term)
     response['QUERY_TIME'] = time.time() - start
+    print(f'classes took {time.time() - start}')
     return response
 
 @app.route('/subjects/<term>/', methods=['GET'])

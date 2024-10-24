@@ -5,6 +5,7 @@ import time
 from typing import List
 import aiohttp
 import asyncio
+from cache import cache
 
 # GPT written helper
 def recursive_parse_json(json_str):
@@ -41,25 +42,10 @@ def parse_soup(soup: BeautifulSoup, term, crn) -> dict:
 
     return response
 
-
-def scrape_instructor(course, term, crn) -> str:
-    subject = course.split()[0]
-    number = course.split()[1]
-    instructor_url = f'https://compass-ssb.tamu.edu/pls/PROD/bwykschd.p_disp_listcrse?term_in={term}&subj_in={subject}&crse_in={number}&crn_in={crn}'
-
-    request = requests.get(instructor_url)
-    if request.status_code != 200: return ""
-    instructor_soup = BeautifulSoup(request.text, 'html.parser')
-
-    instructor_name = instructor_soup.find_all('td', class_='dddefault')[7].text
-    instructor_name = instructor_name.removesuffix(' (P)')
-    return instructor_name
-
 def get_section_seats(term, crn) -> dict:
     url = f'https://compass-ssb.tamu.edu/pls/PROD/bwykschd.p_disp_detail_sched?term_in={term}&crn_in={crn}'
 
     try:
-        print(url)
         page = requests.get(url)
         page.raise_for_status()
     except requests.HTTPError as e:
@@ -99,7 +85,7 @@ def get_term(term):
     
     return terms.get(term, [])
 
-
+@cache.memoize(timeout=300)
 def get_all_classes(term_code: str) -> List[dict]:
     """
     Fetches all classes information for a given term code
@@ -171,7 +157,6 @@ def get_section_details(term_code: str, crn: str) -> dict:
 
             # Define async tasks for each link
             async def fetch_data(key, link):
-                print('a')
                 try:
                     async with session.post(
                         link,
@@ -216,6 +201,7 @@ def get_section_details(term_code: str, crn: str) -> dict:
     return out
 
 def get_subjects(term):
+
     all_classes = get_all_classes(term)
     departments = {}
 
@@ -267,7 +253,6 @@ async def add_seats_to_sections(sections):
                     seat_info.pop('STATUS')
                     sec.update(seat_info)
         except Exception as e:
-            print(e)
             pass
 
     tasks = [fetch_seats(sec) for sec in sections]
@@ -276,7 +261,9 @@ async def add_seats_to_sections(sections):
 def get_course_sections(term_code, subject, course):
     sections = []
 
+    START = time.time()
     classes = get_all_classes(term_code)
+    print(f'get_all_classes took {time.time() - START:.2f} secs')
 
     for clss in classes:
         if clss['SWV_CLASS_SEARCH_SUBJECT'] == subject and clss['SWV_CLASS_SEARCH_COURSE'] == course:
