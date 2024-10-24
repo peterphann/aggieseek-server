@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import json
+import time
 from typing import List
 import aiohttp
 import asyncio
@@ -170,6 +171,7 @@ def get_section_details(term_code: str, crn: str) -> dict:
 
             # Define async tasks for each link
             async def fetch_data(key, link):
+                print('a')
                 try:
                     async with session.post(
                         link,
@@ -200,7 +202,7 @@ def get_section_details(term_code: str, crn: str) -> dict:
                 out['SYLLABUS'] = f"https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=SY&crn_in={crn}&termcode_in={term_code}"
                 if out["OTHER_ATTRIBUTES"]['Meeting times with profs'] and out['OTHER_ATTRIBUTES']['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON']:
                     instructor_info = out["OTHER_ATTRIBUTES"]['Meeting times with profs']['SWV_CLASS_SEARCH_INSTRCTR_JSON'][0]
-                    out['INSTRUCTOR'] = instructor_info['NAME']
+                    out['INSTRUCTOR'] = instructor_info['NAME'].rstrip(' (P)')
                     instructor_info['CV'] = f'https://compass-ssb.tamu.edu/pls/PROD/bwykfupd.p_showdoc?doctype_in=CV&pidm_in={instructor_info['MORE']}'
                 else:
                     out['INSTRUCTOR'] = 'Not assigned'
@@ -250,8 +252,30 @@ def get_subject(term_code, department):
     
     return list(courses.values())
 
+async def add_seats_to_sections(sections):
+    async def fetch_seats(sec):
+        term = sec['SWV_CLASS_SEARCH_TERM']
+        crn = sec['SWV_CLASS_SEARCH_CRN']
+        compass_link = f'https://compass-ssb.tamu.edu/pls/PROD/bwykschd.p_disp_detail_sched?term_in={term}&crn_in={crn}'
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(compass_link) as response:
+                    # Howdy still returns 200 for some reason if the response is invalid kms
+                    text = await response.text()
+                    soup = BeautifulSoup(text, 'html.parser')
+                    seat_info = parse_soup(soup, term, crn)
+                    seat_info.pop('STATUS')
+                    sec.update(seat_info)
+        except Exception as e:
+            print(e)
+            pass
+
+    tasks = [fetch_seats(sec) for sec in sections]
+    await asyncio.gather(*tasks)
+
 def get_course_sections(term_code, subject, course):
     sections = []
+
     classes = get_all_classes(term_code)
 
     for clss in classes:
@@ -265,4 +289,13 @@ def get_course_sections(term_code, subject, course):
         clob_string = sec['SWV_CLASS_SEARCH_JSON_CLOB']
         sec['SWV_CLASS_SEARCH_CLOB'] = recursive_parse_json(clob_string)
 
+        instructor = 'Not assigned'
+        if sec['SWV_CLASS_SEARCH_INSTRCTR']:
+            instructor = sec['SWV_CLASS_SEARCH_INSTRCTR'][0].get('NAME', 'Not assigned')
+        sec['INSTRUCTOR'] = instructor.rstrip(' (P)')
+
+
+    asyncio.run(add_seats_to_sections(sections))
+
     return sections
+    
